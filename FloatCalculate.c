@@ -211,33 +211,6 @@ static Float float_add_impl(Float a, Float b){
     }
   }
   output.mantissa=mantissa_sum;
-  /*if(a.sign==b.sign){
-    
-    if(mantissa_sum>=2){
-      if(test_rightmost_all_ones(output.exponent-get_norm_bias(), EXPONENT_BITS)){
-        output.type=INFINITY_T;
-        return output;
-      }
-      output.mantissa=mantissa_sum*0.5;
-      output.exponent+=1;
-    }
-    else{
-      output.mantissa=mantissa_sum;
-    }
-  }
-  else{
-    mantissa_sum=a.mantissa-b.mantissa*(float)pow(0.5, exponent_diff);
-    while(output.exponent>-126){
-      if(mantissa_sum<1){
-        mantissa_sum*=2;
-        output.exponent-=1;
-      }
-      else if(mantissa_sum>=1){
-        break;
-      }
-    }
-    output.mantissa=mantissa_sum;
-  }*/
   
   if(output.mantissa==0){
     output.type=ZERO_T;
@@ -258,7 +231,6 @@ static Float float_add_impl(Float a, Float b){
       }
     }
   }
-  printf("%u\n", output.mantissa);
   return output;
 }
 
