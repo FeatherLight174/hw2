@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include <stdio.h>
 
 // You can modify the following enum and struct
 typedef enum {

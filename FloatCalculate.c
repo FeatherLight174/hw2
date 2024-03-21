@@ -21,69 +21,91 @@ static bool test_rightmost_all_ones(uint32_t number, size_t bits) {
 
 // You can also design a function of your own.
 static void build_bitstring(Float input, char *output){
-  int32_t temp = 0;
-  int i = 8;
-  if(input.type==INFINITY){
-    output[0]=(char)input.sign;
+  int temp = 0;
+  for(int k =0; k<32;k++){
+    output[k]='0';
+  }
+  if(input.type==INFINITY_T){
+    output[0]=input.sign;
     for(int i = 1; i < 9; i++){
-      output[i]="1";
+      output[i]='1';
     }
-    return output;
   }
   else if(input.type==ZERO_T){
-    output[0]=(char)input.sign;
-    return output;
+    output[0]=input.sign;
   }
   else if(input.type==NAN_T){
-    output[0]=(char)input.sign;
+    output[0]=input.sign;
     for(int i = 1; i < 9; i++){
-      output[i]="1";
+      output[i]='1';
     }
     for(int k = 1; k < 24; k++){
       if(input.mantissa<(float)pow(0.5, k)){
         input.mantissa-=(float)pow(0.5, k);
-        output[k + 8]="1";
+        output[k + 8]='1';
       }
     }
-    return output;
   }
   else if(input.type==NORMALIZED_T){
-    output[0]=(char)input.sign;
-    int32_t temp1 = input.exponent+get_norm_bias();
+    int i = 8;
+    int temp1 = input.exponent-get_norm_bias();
+
+    if(input.sign==1){
+      output[0]='1';
+    }
+    else if(input.sign==0){
+      output[0]='0';
+    }
+
     while (temp1!=0)
     {
       temp=temp1%2;
       temp1=temp1/2;
-      output[i]=(char)temp;
+      if(temp==1){
+        output[i]='1';
+      }
+      else if(temp==0){
+        output[i]='0';
+      }
       i--;
     }
+    
+    
     for(int k = 1; k < 24; k++){
-      if(input.mantissa-1<(float)pow(0.5, k)){
+      if(input.mantissa-1>(float)pow(0.5, k)){
         input.mantissa-=(float)pow(0.5, k);
-        output[k + 8]="1";
+        output[k + 8]='1';
       }
     }
+
+    
+
   }
   else if(input.type==DENORMALIZED_T){
-    output[0]=(char)input.sign;
+    output[0]=input.sign;
     for(int k = 1; k < 24; k++){
       if(input.mantissa<(float)pow(0.5, k)){
         input.mantissa-=(float)pow(0.5, k);
-        output[k + 8]="1";
+        output[k + 8]='1';
       }
     }
   }
 }
+
 // You can also design a function of your own.
 static Float parse_bitstring(const char *input){
   Float output;
+  output.exponent=-126;
+  output.mantissa=0;
+  output.sign=0;
+  output.type=NORMALIZED_T;
   int32_t exponent = 0;
   float mantissa = 0;
   for(int i = 1; i < 9; i++){
-    exponent+=pow(2, 8-i)*(int32_t)(input[i]);
+    exponent+=(pow(2, 8-i)+1)*((input[i])-48);
   }
   for(int i = 9; i < 32; i++){
-    mantissa+=pow(0.5, i - 8)*(int32_t)(input[i]);
+    mantissa+=pow(0.5, i - 8)*((int32_t)(input[i])-48);
   }
   if(test_rightmost_all_zeros(exponent, EXPONENT_BITS)){
     output.exponent=exponent+get_denorm_bias();
@@ -95,12 +117,17 @@ static Float parse_bitstring(const char *input){
     output.mantissa=mantissa + 1;
     output.type=NORMALIZED_T;
   }
-  output.sign=(uint32_t)input[0];
+  output.sign=(uint32_t)(input[0]-48);
   return output;
 }
+
 // You can also design a function of your own.
 static Float float_add_impl(Float a, Float b){
   Float output;
+  output.exponent=-126;
+  output.mantissa=0;
+  output.sign=0;
+  output.type=NORMALIZED_T;
   float mantissa_sum = 1;
   if(a.exponent<b.exponent||((a.exponent==b.exponent)&&(a.mantissa<b.mantissa))){
     Float temp;
