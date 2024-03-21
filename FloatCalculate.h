@@ -18,7 +18,7 @@ typedef enum {
 typedef struct {
   uint32_t sign;
   int32_t exponent;
-  float mantissa;
+  uint32_t mantissa;
 
   FloatType type;
 } Float;
