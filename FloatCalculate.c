@@ -88,12 +88,24 @@ static void build_bitstring(Float input, char *output){
     }
   }
   else if(input.type==DENORMALIZED_T){
-    output[0]=input.sign;
-    for(int k = 1; k < 24; k++){
-      if(input.mantissa<(float)pow(0.5, k)){
-        input.mantissa-=(float)pow(0.5, k);
-        output[k + 8]='1';
+    if(input.sign==1){
+      output[0]='1';
+    }
+    else if(input.sign==0){
+      output[0]='0';
+    }
+    int k = 31;
+    while (input.mantissa!=0)
+    {
+      temp=input.mantissa%2;
+      input.mantissa=input.mantissa/2;
+      if(temp==1){
+        output[k]='1';
       }
+      else if(temp==0){
+        output[k]='0';
+      }
+      k--;
     }
   }
 }
