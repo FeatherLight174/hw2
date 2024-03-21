@@ -40,7 +40,8 @@ static void build_bitstring(Float input, char *output){
       output[i]="1";
     }
     for(int k = 1; k < 24; k++){
-      if(input.mantissa<pow(0.5, k)){
+      if(input.mantissa<(float)pow(0.5, k)){
+        input.mantissa-=(float)pow(0.5, k);
         output[k + 8]="1";
       }
     }
@@ -57,7 +58,8 @@ static void build_bitstring(Float input, char *output){
       i--;
     }
     for(int k = 1; k < 24; k++){
-      if(input.mantissa-1<pow(0.5, k)){
+      if(input.mantissa-1<(float)pow(0.5, k)){
+        input.mantissa-=(float)pow(0.5, k);
         output[k + 8]="1";
       }
     }
@@ -65,7 +67,8 @@ static void build_bitstring(Float input, char *output){
   else if(input.type==DENORMALIZED_T){
     output[0]=(char)input.sign;
     for(int k = 1; k < 24; k++){
-      if(input.mantissa<pow(0.5, k)){
+      if(input.mantissa<(float)pow(0.5, k)){
+        input.mantissa-=(float)pow(0.5, k);
         output[k + 8]="1";
       }
     }
@@ -98,7 +101,7 @@ static Float parse_bitstring(const char *input){
 // You can also design a function of your own.
 static Float float_add_impl(Float a, Float b){
   Float output;
-  float mantissa_sum;
+  float mantissa_sum = 1;
   if(a.exponent<b.exponent||((a.exponent==b.exponent)&&(a.mantissa<b.mantissa))){
     Float temp;
     temp=b;
@@ -109,8 +112,12 @@ static Float float_add_impl(Float a, Float b){
   output.exponent=a.exponent;
   int32_t exponent_diff=a.exponent-b.exponent;
   if(a.sign==b.sign){
-    mantissa_sum=a.mantissa+b.mantissa*pow(0.5, exponent_diff);
+    mantissa_sum=a.mantissa+b.mantissa*(float)pow(0.5, exponent_diff);
     if(mantissa_sum>=2){
+      if(test_rightmost_all_ones(output.exponent-get_norm_bias(), EXPONENT_BITS)){
+        output.type=INFINITY_T;
+        return output;
+      }
       output.mantissa=mantissa_sum*0.5;
       output.exponent+=1;
     }
@@ -119,7 +126,16 @@ static Float float_add_impl(Float a, Float b){
     }
   }
   else{
-    mantissa_sum=a.mantissa-b.mantissa*pow(0.5, exponent_diff);
+    mantissa_sum=a.mantissa-b.mantissa*(float)pow(0.5, exponent_diff);
+    while(output.exponent>-126){
+      if(mantissa_sum<1){
+        mantissa_sum*=2;
+        output.exponent-=1;
+      }
+      else if(mantissa_sum>=1){
+        break;
+      }
+    }
     output.mantissa=mantissa_sum;
   }
   if(output.mantissa==0){
