@@ -21,6 +21,7 @@ static bool test_rightmost_all_ones(uint32_t number, size_t bits) {
 
 // You can also design a function of your own.
 static void build_bitstring(Float input, char *output){
+
   int temp = 0;
   for(int k =0; k<32;k++){
     output[k]='0';
@@ -51,16 +52,16 @@ static void build_bitstring(Float input, char *output){
     }
   }
   else if(input.type==NORMALIZED_T){
-    int i = 8;
     
-    int temp1 = input.exponent-get_norm_bias();
+    
+    uint32_t temp1 = input.exponent-get_norm_bias();
     if(input.sign==1){
       output[0]='1';
     }
     else if(input.sign==0){
       output[0]='0';
     }
-
+    int i = 8;
     while (temp1!=0)
     {
       temp=temp1%2;
@@ -72,6 +73,9 @@ static void build_bitstring(Float input, char *output){
         output[i]='0';
       }
       i--;
+      if(i==0){
+        break;
+      }
     }
     int k = 31;
     while (input.mantissa!=0)
@@ -85,6 +89,9 @@ static void build_bitstring(Float input, char *output){
         output[k]='0';
       }
       k--;
+      if(k==8){
+        break;
+      }
     }
   }
   else if(input.type==DENORMALIZED_T){
@@ -108,6 +115,8 @@ static void build_bitstring(Float input, char *output){
       k--;
     }
   }
+  output[8]='1';
+  output[31]='1';
 }
 
 // You can also design a function of your own.
@@ -131,7 +140,7 @@ static Float parse_bitstring(const char *input){
     for(int k = 0;k<31-i;k++){
       mul*=2;
     }
-    mantissa+=mul*((int32_t)(input[i])-48);
+    mantissa+=mul*((input[i])-48);
   }
   output.mantissa=mantissa;
   if(test_rightmost_all_zeros(exponent, EXPONENT_BITS)){
@@ -201,17 +210,19 @@ static Float float_add_impl(Float a, Float b){
   }
   while(mantissa_sum>=POW23*2){
     mantissa_sum/=2;
+    if(output.exponent==128){
+      break;
+    }
     output.exponent+=1;
   }
   while(mantissa_sum<POW23){
     mantissa_sum*=2;
-    output.exponent-=1;
     if(output.exponent==-126){
       break;
     }
+    output.exponent-=1;
   }
   output.mantissa=mantissa_sum;
-  
   if(output.mantissa==0){
     output.type=ZERO_T;
   }
