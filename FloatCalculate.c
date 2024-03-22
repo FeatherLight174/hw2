@@ -115,8 +115,7 @@ static void build_bitstring(Float input, char *output){
       k--;
     }
   }
-  output[8]='1';
-  output[31]='1';
+  output[31]='0';
 }
 
 // You can also design a function of your own.
@@ -176,53 +175,81 @@ static Float float_add_impl(Float a, Float b){
   output.sign=a.sign;
   output.exponent=a.exponent;
   int32_t exponent_diff=a.exponent-b.exponent;
+  
   if((a.type==NORMALIZED_T)&&(b.type==NORMALIZED_T)){
+    uint32_t b_mantissa=(b.mantissa+POW23)*8;
+    uint32_t a_mantissa=(a.mantissa+POW23)*8;
+    uint32_t sticky=0;
+    
+    for(int i=0; i<exponent_diff;i++){
+      b_mantissa=b_mantissa>>1;
+      if(b_mantissa%2==1){
+        sticky=1;
+      }
+    }
+    if((b_mantissa%2==0)&&(sticky==1)){
+      b_mantissa+=1;
+    }
     if(a.sign==b.sign){
-      mantissa_sum=a.mantissa+((b.mantissa+POW23)>>exponent_diff)+POW23;
+      mantissa_sum=a_mantissa+b_mantissa;
       if(test_rightmost_all_ones(output.exponent-get_norm_bias(), EXPONENT_BITS)){
         output.type=INFINITY_T;
         return output;
       }
     }
     else{
-      mantissa_sum=a.mantissa-((b.mantissa+POW23)>>exponent_diff)+POW23;
+      mantissa_sum=a_mantissa-b_mantissa;
     }
   }
   else if((a.type==NORMALIZED_T)&&(b.type==DENORMALIZED_T)){
+    uint32_t b_mantissa=(b.mantissa)*8;
+    uint32_t a_mantissa=(a.mantissa+POW23)*8;
+    uint32_t sticky=0;
+    for(int i=0; i<exponent_diff;i++){
+      b_mantissa=b_mantissa>>1;
+      if(b_mantissa%2==1){
+        sticky=1;
+      }
+    }
+    if((b_mantissa%2==0)&&(sticky==1)){
+      b_mantissa+=1;
+    }
     if(a.sign==b.sign){
-      mantissa_sum=a.mantissa+(b.mantissa>>exponent_diff)+POW23;
+      mantissa_sum=a_mantissa+b_mantissa;
       if(test_rightmost_all_ones(output.exponent-get_norm_bias(), EXPONENT_BITS)){
         output.type=INFINITY_T;
         return output;
       }
     }
     else{
-      mantissa_sum=a.mantissa-(b.mantissa>>exponent_diff)+POW23;
+      mantissa_sum=a_mantissa-b_mantissa;
     }
   }
   else if((a.type==DENORMALIZED_T)&&(b.type==DENORMALIZED_T)){
+    uint32_t b_mantissa=(b.mantissa)*8;
+    uint32_t a_mantissa=(a.mantissa)*8;
     if(a.sign==b.sign){
-      mantissa_sum=a.mantissa+(b.mantissa>>exponent_diff);
+      mantissa_sum=a_mantissa+b_mantissa;
     }
     else{
-      mantissa_sum=a.mantissa-(b.mantissa>>exponent_diff);
+      mantissa_sum=a_mantissa+b_mantissa;
     }
   }
-  while(mantissa_sum>=POW23*2){
-    mantissa_sum/=2;
+  output.mantissa=mantissa_sum/8;
+  while(output.mantissa>=POW23*2){
+    output.mantissa/=2;
     if(output.exponent==128){
       break;
     }
     output.exponent+=1;
   }
-  while(mantissa_sum<POW23){
-    mantissa_sum*=2;
+  while(output.mantissa<POW23){
+    output.mantissa*=2;
     if(output.exponent==-126){
       break;
     }
     output.exponent-=1;
   }
-  output.mantissa=mantissa_sum;
   if(output.mantissa==0){
     output.type=ZERO_T;
   }
